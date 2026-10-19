@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba de Voz PWA</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: transparent;
+      overflow: hidden;
+      font-family: sans-serif;
+      touch-action: none;
+    }
+    .play-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90px;
+      height: 90px;
+      background-color: #22c55e;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+      cursor: grab;
+      user-select: none;
+      z-index: 9999;
+    }
+    .play-button:active {
+      cursor: grabbing;
+      transform: scale(0.95);
+    }
+    .play-icon {
+      width: 45px;
+      height: 45px;
+      margin-left: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="floating-btn" class="play-button">
+    <svg viewBox="0 0 24 24" class="play-icon">
+      <path d="M8 5v14l11-7z" fill="#ffffff"/>
+    </svg>
+  </div>
+
+  <script>
+    const btn = document.getElementById('floating-btn');
+    let isDragging = false;
+    let currentX, currentY, initialX, initialY;
+    let xOffset = 0, yOffset = 0;
+    let hasMoved = false;
+
+    btn.addEventListener('touchstart', dragStart, false);
+    btn.addEventListener('touchend', dragEnd, false);
+    btn.addEventListener('touchmove', drag, false);
+
+    btn.addEventListener('mousedown', dragStart, false);
+    btn.addEventListener('mouseup', dragEnd, false);
+    btn.addEventListener('mousemove', drag, false);
+
+    function dragStart(e) {
+      hasMoved = false;
+      if (e.type === "touchstart") {
+        initialX = e.touches[0].clientX - xOffset;
+        initialY = e.touches[0].clientY - yOffset;
+      } else {
+        initialX = e.clientX - xOffset;
+        initialY = e.clientY - yOffset;
+      }
+      if (e.target === btn || btn.contains(e.target)) {
+        isDragging = true;
+      }
+    }
+
+    function dragEnd() {
+      initialX = currentX;
+      initialY = currentY;
+      isDragging = false;
+      
+      if (!hasMoved) {
+        hablarConVozMasculina("Hola Saulo, ¿cómo va tu día?");
+      }
+    }
+
+    function drag(e) {
+      if (isDragging) {
+        e.preventDefault();
+        hasMoved = true;
+        if (e.type === "touchmove") {
+          currentX = e.touches[0].clientX - initialX;
+          currentY = e.touches[0].clientY - initialY;
+        } else {
+          currentX = e.clientX - initialX;
+          currentY = e.clientY - initialY;
+        }
+        xOffset = currentX;
+        yOffset = currentY;
+        setTranslate(currentX, currentY, btn);
+      }
+    }
+
+    function setTranslate(xPos, yPos, el) {
+      el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+    }
+
+    function hablarConVozMasculina(texto) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const mensaje = new SpeechSynthesisUtterance(texto);
+        mensaje.lang = 'es-ES';
+        mensaje.pitch = 0.8;
+        mensaje.rate = 0.95;
+
+        const voces = window.speechSynthesis.getVoices();
+        const vozHombre = voces.find(v => 
+          v.lang.startsWith('es') && 
+          (v.name.toLowerCase().includes('male') || 
+           v.name.toLowerCase().includes('pablo') || 
+           v.name.toLowerCase().includes('jorge') || 
+           v.name.toLowerCase().includes('raul'))
+        );
+
+        if (vozHombre) {
+          mensaje.voice = vozHombre;
+        }
+
+        window.speechSynthesis.speak(mensaje);
+      }
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  </script>
+</body>
+</html>
